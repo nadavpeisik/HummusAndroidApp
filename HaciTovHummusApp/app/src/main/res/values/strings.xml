@@ -1,0 +1,37 @@
+<resources>
+
+    <string name="app_name">הכי טוב\nחומוס</string>
+
+    <!-- Welcome Screen -->
+    <string name="new_order">הזמנה לישיבה</string>
+    <string name="take_out">הזמנה לקחת</string>
+    <string name="enter_time">הזן זמן הגעה</string>
+    <string name="enter_name">הזן שם להזמנה</string>
+    <string name="long_line">זמן ההמתנה ארוך</string>
+    <string name="language">Eng</string>
+    <string name="contact_us">התקשרו אלינו</string>
+    <string name="phone_number">030000000</string>
+
+    <!-- Order Assembly Screen -->
+    <string name="business_meal">מנה עסקית</string>
+    <string name="small_dish">מנת ילדים</string>
+    <string name="basics">תוספות</string>
+    <string name="specials">מנות</string>
+    <string name="spices">תבלינים</string>
+    <string name="small_salad">סלט אישי</string>
+    <string name="drink">שתיה</string>
+    <string name="user_comment">הערה</string>
+    <string name="add_drink_toast">הוסף שתיה בחינם!</string>
+    <string name="finish_order">הוסף להזמנה</string>
+
+    <!-- Orders Screen -->
+    <string name="place_order">הזמן</string>
+    <string name="thank_you">תודה על ההזמנה!</string>
+    <string name="go_pay">אנא גשו לעמדת התשלום</string>
+    <string name="order_received">הזמנתכם התקבלה ותהיה מוכנה בקרוב</string>
+    <string name="error">אוי לא!</string>
+    <string name="order_not_received">ההזמנה לא נקלטה אצלנו...נסו שוב בבקשה</string>
+    <string name="order_place_in_line">מיקום הזמנתכם בתור</string>
+
+
+</resources>
