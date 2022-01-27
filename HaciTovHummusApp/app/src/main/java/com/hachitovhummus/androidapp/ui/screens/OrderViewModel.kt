@@ -1,77 +1,85 @@
 package com.hachitovhummus.androidapp.ui.screens
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.hachitovhummus.androidapp.R
 import com.hachitovhummus.androidapp.model.*
 
-class OrderViewModel() : ViewModel() {
-
-    //Order
+class OrderViewModel(var happyHour: Boolean) : ViewModel() {
     private val _order = MutableLiveData(Order())
     val order: LiveData<Order> = _order
+    private val _enabledBasics = MutableLiveData(setOf(Basic.CHICKPEA, Basic.TAHINI, Basic.FUL, Basic.EGG))
+    val enabledBasics: LiveData<Set<Basic>> = _enabledBasics
 
-    val basicPrice = 25
-    var drinkPrice = 0
-    var smallSaladPrice = 0
-    private val _price = MutableLiveData(basicPrice)
-    val price: LiveData<Int> = _price
-
-    // Business Dish
-    private val _businessDish = MutableLiveData(false)
-    val businessDish: LiveData<Boolean> = _businessDish
+    // UI driven events functions
 
     fun onBusinessDishSelect(){
-        if(!_businessDish.value!!){
+        //Log.d("ERROR Before", "${_businessDish.value}")
+        if(!_order.value!!.isBusinessMeal){
             onSpecialChange(Special.NONE)
-            _smallDish.value = false
+            order.value!!.dish.isSmallDish = false
         }
-        _businessDish.value = !_businessDish.value!!
+        _order.value!!.isBusinessMeal = !_order.value!!.isBusinessMeal
         checkForClean()
-        calculatePrice()
+        order.value!!.calculatePrice(happyHour)
+        //Log.d("ERROR After", "${_businessDish.value}")
     }
-
-    // Small Dish
-    private val _smallDish = MutableLiveData(false)
-    val smallDish: LiveData<Boolean> = _smallDish
 
     fun onSmallDishSelect(){
-        if(!_smallDish.value!!){
+        //Log.d("ERROR Before", "${_smallDish.value}")
+        if(!order.value!!.dish.isSmallDish){
             onSpecialChange(Special.NONE)
-            _businessDish.value = false
+            _order.value!!.isBusinessMeal = false
         }
-        _smallDish.value = !_smallDish.value!!
+        order.value!!.dish.isSmallDish = !order.value!!.dish.isSmallDish
         checkForClean()
-        calculatePrice()
+        order.value!!.calculatePrice(happyHour)
+        //Log.d("ERROR After", "${_smallDish.value}")
     }
 
-    // Basics
-    private val _basics = MutableLiveData(setOf<Basic>())
-    val basics: LiveData<Set<Basic>> = _basics
+    fun onSpecialChange(newSpecial: Special) {
+        //Log.d("ERROR Before", "${_special.value}")
+        if(order.value!!.dish.special == newSpecial){
+            order.value!!.dish.special = Special.NONE
+            _order.value!!.dish.nameSpecialPart = ""
+        }
+        else{
+            order.value!!.dish.special = newSpecial
+            order.value!!.dish.basics.clear()
+            _order.value!!.dish.nameBasicsPart = ""
+            _order.value!!.dish.nameSpecialPart = order.value!!.dish.special.type
+        }
+        _enabledBasics.value = order.value!!.dish.special.enabledBasics
+        order.value!!.dish.isSaladDish = order.value!!.dish.special.isSalad
+        if(order.value!!.dish.isSaladDish){
+            _order.value!!.hasSmallSalad = false
+            _order.value!!.dish.spices.addAll(setOf(Spice.CUMIN, Spice.PAPRIKA, Spice.PARSLEY, Spice.OLIVE_OIL))
+            _order.value!!.dish.excludingSpices = ""
+        }
+        _order.value!!.dish.name = _order.value!!.dish.nameSpecialPart + _order.value!!.dish.nameBasicsPart
+        checkForClean()
+        _order.value!!.dish.imageID = dishesPicturesMap[order.value!!.dish.buildImageNameFromPrefixes()]!!
+        order.value!!.calculatePrice(happyHour)
+        //Log.d("ERROR After", "${_special.value}")
+    }
 
     fun onBasicSelect(item: Basic){
-
         if(_order.value!!.dish.nameSpecialPart == "קלאסי"){
             _order.value!!.dish.nameSpecialPart = ""
         }
 
-        if(_basics.value!!.contains(item)){
-            _basics.value = _basics.value!!.toMutableSet().also {
-                it.remove(item)
-            }
+        if(order.value!!.dish.basics.contains(item)){
+            order.value!!.dish.basics.remove(item)
         }
         else{
-            _basics.value = _basics.value!! + setOf(item)
+            order.value!!.dish.basics.add(item)
         }
-        _order.value!!.dish.nameBasicsPart = DishBasicsToString()
+        order.value!!.dish.updateNameBasicsPart()
 
-
-        if(_basics.value!!.isEmpty()){
-            _order.value!!.dish.nameSpecialPart = _special.value!!.type
+        if(order.value!!.dish.basics.isEmpty()){
+            _order.value!!.dish.nameSpecialPart = order.value!!.dish.special.type
         }
-
 
         if(_order.value!!.dish.nameBasicsPart != "" && _order.value!!.dish.nameSpecialPart != "" && !_order.value!!.dish.nameSpecialPart.contains("עם")){
             _order.value!!.dish.nameSpecialPart = _order.value!!.dish.nameSpecialPart + " עם "
@@ -79,219 +87,51 @@ class OrderViewModel() : ViewModel() {
 
         _order.value!!.dish.name = _order.value!!.dish.nameSpecialPart + _order.value!!.dish.nameBasicsPart
         checkForClean()
-        _order.value!!.dish.imageID = dishesPicturesMap[buildImageNameFromPrefixes()]!!
+        _order.value!!.dish.imageID = dishesPicturesMap[order.value!!.dish.buildImageNameFromPrefixes()]!!
+        //Log.d("Basics Current Set", "${_basics.value}")
     }
-
-    // Specials
-    private val _special = MutableLiveData(Special.NONE)
-    val special: LiveData<Special> = _special
-
-    private val _enabledBasics = MutableLiveData(setOf<Basic>(Basic.CHICKPEA, Basic.TAHINI, Basic.FUL, Basic.EGG))
-    val enabledBasics: LiveData<Set<Basic>> = _enabledBasics
-
-    private val _isSaladDish = MutableLiveData(false)
-    val isSaladDish: LiveData<Boolean> = _isSaladDish
-
-    fun onSpecialChange(newSpecial: Special) {
-        if(_special.value == newSpecial){
-            _special.value = Special.NONE
-            _order.value!!.dish.nameSpecialPart = ""
-        }
-        else{
-            _special.value = newSpecial
-            _basics.value = setOf()
-            _order.value!!.dish.nameBasicsPart = ""
-            _order.value!!.dish.nameSpecialPart = _special.value!!.type
-            val specialPrefix: String = _special.value!!.name.substring(0,1).lowercase() + '_'
-        }
-        _enabledBasics.value = _special.value!!.enabledBasics
-        _isSaladDish.value = _special.value!!.isSalad
-        if(_isSaladDish.value!!){
-            _smallSalad.value = false
-            _spices.value = setOf(Spice.CUMIN, Spice.PAPRIKA, Spice.PARSLEY, Spice.OLIVE_OIL)
-            _order.value!!.dish.excludingSpices = ""
-        }
-        _order.value!!.dish.name = _order.value!!.dish.nameSpecialPart + _order.value!!.dish.nameBasicsPart
-        checkForClean()
-        _order.value!!.dish.imageID = dishesPicturesMap[buildImageNameFromPrefixes()]!!
-        calculatePrice()
-    }
-
-    fun calculatePrice(){
-        if(_smallDish.value!!){
-            if(_smallSalad.value!! && drink.value!! != Drink.NONE){
-                _price.value = 42
-            }
-            else if(_smallSalad.value!!){
-                _price.value = 36
-            }
-            else{
-                _price.value = 33
-            }
-            if(_special.value!!.additionalPrice == 6){
-                _price.value = _price.value!! + 7
-            }
-        }
-        else if(_isSaladDish.value!!){
-            if(drinkPrice>0){
-                _price.value = _special.value!!.additionalPrice + drinkPrice + smallSaladPrice + 1
-            }
-            else{
-                _price.value = _special.value!!.additionalPrice + drinkPrice + smallSaladPrice
-            }
-        }
-        else{
-            if(_businessDish.value!!){
-                if(_special.value!!.additionalPrice > 0){
-                    _price.value = 46 + smallSaladPrice
-                }
-                else{
-                    _price.value = 39 + smallSaladPrice
-                }
-            }
-            else{
-                if(drinkPrice > 0 && _special.value!!.additionalPrice > 0){
-                    _price.value = basicPrice + _special.value!!.additionalPrice + drinkPrice + smallSaladPrice
-                }
-                else{
-                    _price.value = basicPrice + _special.value!!.additionalPrice + drinkPrice + smallSaladPrice
-                }
-            }
-        }
-    }
-
-    fun checkForClean(){
-        if(_special.value == Special.NONE && _basics.value!!.isEmpty()){
-            _order.value!!.dish.name = "נקי"
-        }
-    }
-
-    // Spices
-    private val _spices = MutableLiveData(setOf<Spice>(Spice.CUMIN, Spice.PAPRIKA, Spice.PARSLEY, Spice.OLIVE_OIL))
-    val spices: LiveData<Set<Spice>> = _spices
 
     fun onSpiceSelect(item: Spice){
-        if(_spices.value!!.contains(item)){
-            _spices.value = _spices.value!!.toMutableSet().also {
-                it.remove(item)
-            }
+        if(_order.value!!.dish.spices.contains(item)){
+            _order.value!!.dish.spices.remove(item)
         }
         else{
-            _spices.value = _spices.value!! + setOf(item)
+            _order.value!!.dish.spices.add(item)
         }
-        _order.value!!.dish.excludingSpices = DishSpicesToSpicesToExludeString()
-        Log.d("Spices Current Set", "${_spices.value}")
+        order.value!!.dish.updateExcludingSpices()
+        //Log.d("Spices Current Set", "${_spices.value}")
     }
-
-    // Small Salad
-    private val _smallSalad = MutableLiveData(false)
-    val smallSalad: LiveData<Boolean> = _smallSalad
 
     fun onSmallSaladSelect(){
-        _smallSalad.value = !_smallSalad.value!!
-        smallSaladPrice = if(_smallSalad.value!!){
-            15
-        } else{
-            0
-        }
-        calculatePrice()
+        _order.value!!.hasSmallSalad = !_order.value!!.hasSmallSalad
+        order.value!!.calculatePrice(happyHour)
     }
-
-    // Drinks
-    private val _drink = MutableLiveData(Drink.NONE)
-    val drink: LiveData<Drink> = _drink
 
     fun onDrinkChange(newDrink: Drink) {
-        Log.d("ERROR Before", "${_drink.value}")
-        if(_drink.value == newDrink){
-            _drink.value = Drink.NONE
-            drinkPrice = 0
+        //Log.d("ERROR Before", "${_drink.value}")
+        if(_order.value!!.drink == newDrink){
+            _order.value!!.drink = Drink.NONE
         }
         else{
-            _drink.value = newDrink
-            drinkPrice = 7
+            _order.value!!.drink = newDrink
+            if(!_order.value!!.isBusinessMeal && !order.value!!.dish.isSaladDish && !order.value!!.dish.isSmallDish){
+                _order.value!!.isBusinessMeal = true
+            }
         }
-        calculatePrice()
-        Log.d("ERROR After", "${_drink.value}")
+        order.value!!.calculatePrice(happyHour)
+        //Log.d("ERROR After", "${_drink.value}")
     }
-
-    // User Comment
-    private val _useComment = MutableLiveData("")
-    val userComment: LiveData<String> = _useComment
 
     fun updateComment(userComment: String){
-        _useComment.value = userComment
+        order.value!!.costumerComment = userComment
     }
 
-    fun deservesDrink(): Boolean {
-        if(_smallDish.value!! && _drink.value!! == Drink.NONE && !_smallSalad.value!!){
-            println(true)
-            return true
-        }
-        else if(_businessDish.value!! && _drink.value!! == Drink.NONE){
-            return true
-        }
-        else{
-            println(false)
-            return false
-        }
-    }
+    // Utilities
 
-    fun DishSpicesToSpicesToExludeString(): String {
-        val spicesToExlude = setOf(
-            Spice.CUMIN,
-            Spice.PAPRIKA,
-            Spice.PARSLEY,
-            Spice.OLIVE_OIL
-        ).subtract(_spices.value!!)
-
-        if(spicesToExlude.isEmpty()){
-            return ""
+    private fun checkForClean(){
+        if(order.value!!.dish.special == Special.NONE && order.value!!.dish.basics.isEmpty()){
+            _order.value!!.dish.name = "נקי"
         }
-
-        val spicesToExcludeTypes = mutableSetOf<String>()
-        for(item: Spice in spicesToExlude){
-            spicesToExcludeTypes.add(item.type)
-        }
-        return ReplaceLastCommaWithAnd("בלי " + spicesToExcludeTypes.joinToString())
-    }
-
-    fun DishBasicsToString(): String {
-        return if (_basics.value!!.isEmpty()) {
-            ""
-        } else {
-            val basicsNames = mutableSetOf<String>()
-            for(item: Basic in _basics.value!!){
-                basicsNames.add(item.type)
-            }
-            ReplaceLastCommaWithAnd(basicsNames.joinToString())
-        }
-    }
-
-    fun ReplaceLastCommaWithAnd(str: String): String {
-        return if (str.contains(',')) {
-            str.substringBeforeLast(',') + " ו" + str.substringAfterLast(", ")
-        } else {
-            str
-        }
-    }
-
-    fun buildImageNameFromPrefixes(): String{
-        var imageName: String = _special.value!!.prefix
-        if(_basics.value!!.contains(Basic.CHICKPEA)){
-            imageName += "_c"
-        }
-        if(_basics.value!!.contains(Basic.TAHINI)){
-            imageName += "_t"
-        }
-        if(_basics.value!!.contains(Basic.FUL)){
-            imageName += "_f"
-        }
-        if(_basics.value!!.contains(Basic.EGG)){
-            imageName += "_e"
-        }
-
-        return imageName
     }
 
     private val dishesPicturesMap = mapOf(

@@ -14,7 +14,6 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -28,7 +27,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.google.accompanist.insets.navigationBarsPadding
 import com.google.accompanist.insets.statusBarsPadding
 import com.hachitovhummus.androidapp.R
@@ -42,7 +40,6 @@ private val BottomBarHeight = 88.dp
 @ExperimentalMaterialApi
 @Composable
 fun OrdersScreen(onClickNewOrder: () -> Unit, onClickEditOrder: () -> Unit, orderListViewModel: OrderListViewModel, restartApp: () -> Unit){
-    val refreshList: Boolean by orderListViewModel.refreshList.observeAsState(true)
 
     Box(modifier = Modifier
         .navigationBarsPadding()
@@ -51,7 +48,7 @@ fun OrdersScreen(onClickNewOrder: () -> Unit, onClickEditOrder: () -> Unit, orde
             Brush.verticalGradient(listOf(Cream1, Cream2))
         )
     ){
-        OrderList(modifier = Modifier.statusBarsPadding().padding(bottom = BottomBarHeight, start = 16.dp, end = 16.dp), orders = orderListViewModel.orders.value!!, onClickNewOrder = onClickNewOrder, onClickEditOrder = onClickEditOrder, vm = orderListViewModel, refreshList)
+        OrderList(modifier = Modifier.statusBarsPadding().padding(bottom = BottomBarHeight, start = 16.dp, end = 16.dp), orders = orderListViewModel.orderCollection.orders, onClickNewOrder = onClickNewOrder, onClickEditOrder = onClickEditOrder, vm = orderListViewModel)
         BottomArea(orderListViewModel = orderListViewModel, restartApp, modifier = Modifier
             .align(Alignment.BottomCenter)
             .fillMaxWidth()
@@ -62,16 +59,14 @@ fun OrdersScreen(onClickNewOrder: () -> Unit, onClickEditOrder: () -> Unit, orde
 @ExperimentalAnimationApi
 @ExperimentalMaterialApi
 @Composable
-fun OrderList(modifier: Modifier, orders: List<Order>, onClickNewOrder: () -> Unit, onClickEditOrder: () -> Unit, vm: OrderListViewModel, refreshList: Boolean)
+fun OrderList(modifier: Modifier, orders: List<Order>, onClickNewOrder: () -> Unit, onClickEditOrder: () -> Unit, vm: OrderListViewModel)
 {
-    if(refreshList){
-        LazyColumn(modifier = modifier) {
-            item{NextOrder(onClickNewOrder)}
-            itemsIndexed(items = orders.reversed()) { index, order  -> OrderCardContainer(
-                order, onClickEditOrder, orders.size - index - 1, vm,   order.price, order.drink != Drink.NONE, order.hasSmallSalad, order.drink)
-            }
-            item{Spacer(Modifier.size(28.dp))}
+    LazyColumn(modifier = modifier) {
+        item{NextOrder(onClickNewOrder)}
+        itemsIndexed(items = orders.reversed()) { index, order  -> OrderCardContainer(
+            order, onClickEditOrder, orders.size - index - 1, vm,   order.price, order.drink != Drink.NONE, order.hasSmallSalad, order.drink)
         }
+        item{Spacer(Modifier.size(28.dp))}
     }
 }
 
@@ -100,7 +95,7 @@ fun BottomArea(orderListViewModel: OrderListViewModel, restartApp: () -> Unit, m
                 .padding(start = 16.dp, end = 32.dp, bottom = 18.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
 
             AnimatedVisibility(visible = activateUserNameAnimation, enter = slideInVertically(), exit = slideOutVertically() + fadeOut() ){
-                userName(orderListViewModel, focusManager)
+                UserName(orderListViewModel, focusManager)
             }
             Text(text = "בטל הזמנה", style = hummusAppTypography.h4, color = Color.Red, modifier = Modifier.clickable(onClick = {
                 restartApp()
@@ -113,24 +108,23 @@ fun BottomArea(orderListViewModel: OrderListViewModel, restartApp: () -> Unit, m
             Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.background(
                 Brush.horizontalGradient(listOf(Grad4,Grad6), startX = -100f))
                 .clickable(onClick = {
-                    if(orderListViewModel.orders.value!!.isEmpty()){
+                    if(!orderListViewModel.orderCollection.orders.isEmpty()){
+                        if(!orderListViewModel.orderCollection.checkUserNameInit()){
+                            activateUserNameAnimation = false
+                            val handler = Handler(Looper.getMainLooper())
+                            handler.postDelayed({
+                                activateUserNameAnimation = true
+                            }, 40)
+                        }
+                        else{
+                            focusManager.clearFocus()
+                            visibilityOfFinishScreen = true
 
-                    }
-                    else if(orderListViewModel.userName.value == ""){
-                        activateUserNameAnimation = false
-                        val handler = Handler(Looper.getMainLooper())
-                        handler.postDelayed({
-                            activateUserNameAnimation = true
-                        }, 40)
-                    }
-                    else{
-                        focusManager.clearFocus()
-                        visibilityOfFinishScreen = true;
-
-                        val handler = Handler(Looper.getMainLooper())
-                        handler.postDelayed({
-                            restartApp()
-                        }, 8000)
+                            val handler = Handler(Looper.getMainLooper())
+                            handler.postDelayed({
+                                restartApp()
+                            }, 8000)
+                        }
                     }
                 }
                 )
@@ -145,11 +139,10 @@ fun BottomArea(orderListViewModel: OrderListViewModel, restartApp: () -> Unit, m
 }
 
 @Composable
-fun userName(vm: OrderListViewModel, foc: FocusManager){
-    var userText by remember { mutableStateOf(vm.userName.value!!) }
-
-    OutlinedTextField(value = userText, onValueChange = {vm.setUserName(it); userText = vm.userName.value!!}, label = { Text(text = "שם המזמין", style = hummusAppTypography.subtitle1, textAlign = TextAlign.Center) }, singleLine = true, textStyle = hummusAppTypography.subtitle1,
-        keyboardActions = KeyboardActions(onDone = {foc.clearFocus(); userText = vm.userName.value!!}),modifier = Modifier
+fun UserName(vm: OrderListViewModel, foc: FocusManager) {
+    var userText by remember { mutableStateOf("") }
+    OutlinedTextField(value = userText, onValueChange = {vm.orderCollection.userName = it; userText = vm.orderCollection.userName; println(vm.orderCollection.userName)}, label = { Text(text = "שם המזמין", style = hummusAppTypography.subtitle1, textAlign = TextAlign.Center) }, singleLine = true, textStyle = hummusAppTypography.subtitle1,
+        keyboardActions = KeyboardActions(onDone = {foc.clearFocus(); userText = vm.orderCollection.userName}),modifier = Modifier
             .width(116.dp).height(58.dp))
 }
 
@@ -204,9 +197,9 @@ fun NextOrder(onClickNewOrder: () -> Unit){
 @Composable
 fun OrderListPreview()
 {
-    HachiTovHummusTheme(){
+    HachiTovHummusTheme{
         Surface{
-            OrdersScreen({},{},OrderListViewModel(),{})
+            OrdersScreen({},{},OrderListViewModel(true),{})
         }
     }
 }

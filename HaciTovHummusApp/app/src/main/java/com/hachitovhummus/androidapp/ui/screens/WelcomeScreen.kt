@@ -31,7 +31,7 @@ import com.hachitovhummus.androidapp.ui.theme.*
 import com.hachitovhummus.androidapp.R
 
 @Composable
-fun WelcomeScreen(onClickNewOrder: () -> Unit, onClickTakeOut: () -> Unit, vm: OrderListViewModel)
+fun WelcomeScreen(onClickNewOrder: () -> Unit, onClickTakeOut: () -> Unit)
 {
     Box(modifier = Modifier
         .fillMaxSize()
@@ -48,14 +48,14 @@ fun WelcomeScreen(onClickNewOrder: () -> Unit, onClickTakeOut: () -> Unit, vm: O
                 .statusBarsPadding()
                 .fillMaxSize()){
             Image(painter = painterResource(R.drawable.welcome_screen_logo_v6), contentDescription = "logo pic")
-            ButtonsArea(onClickNewOrder, onClickTakeOut, vm)
+            ButtonsArea(onClickNewOrder, onClickTakeOut)
         }
     }
 }
 
 @Composable
-fun ButtonsArea(onClickNewOrder: () -> Unit, onClickTakeOut:() -> Unit, vm: OrderListViewModel){
-    Surface(shape = RoundedCornerShape(topStart = 40.dp,topEnd = 40.dp,), elevation = 20.dp, color = Color.White, modifier = Modifier.fillMaxSize()) {
+fun ButtonsArea(onClickNewOrder: () -> Unit, onClickTakeOut:() -> Unit){
+    Surface(shape = RoundedCornerShape(topStart = 40.dp,topEnd = 40.dp), elevation = 20.dp, color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(top = 32.dp, bottom = 16.dp, start = 40.dp, end = 40.dp), verticalArrangement = Arrangement.SpaceBetween, horizontalAlignment = Alignment.CenterHorizontally) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Surface(shape = RoundedCornerShape(24.dp), elevation = 4.dp, modifier = Modifier
@@ -91,7 +91,7 @@ fun ButtonsArea(onClickNewOrder: () -> Unit, onClickTakeOut:() -> Unit, vm: Orde
 }
 
 fun dialPhoneNumber(phoneNumber: String, context: Context) {
-    Log.d("Dailing", "now")
+    Log.d("Dialing", "now")
     val intent = Intent(Intent.ACTION_DIAL).apply {
         data = Uri.parse("tel:$phoneNumber")
     }
@@ -103,9 +103,9 @@ fun dialPhoneNumber(phoneNumber: String, context: Context) {
 @Preview
 @Composable
 fun WelcomeScreenPreview(){
-    HachiTovHummusTheme() {
+    HachiTovHummusTheme {
         Surface{
-            WelcomeScreen({},{},OrderListViewModel())
+            WelcomeScreen({},{})
         }
     }
 }

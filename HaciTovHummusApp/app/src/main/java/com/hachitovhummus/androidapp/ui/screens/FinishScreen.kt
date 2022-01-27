@@ -6,7 +6,6 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -35,14 +34,14 @@ fun FinishScreen(animate: Boolean){
     }, 10)
 
     val offsetAnimation: Dp by animateDpAsState(
-        if (!startAnimation) -900.dp else 0.dp,
+        if (!startAnimation) (-900).dp else 0.dp,
         spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = 100.8F)
     )
 
     Surface(color = Yellow7, modifier = Modifier.fillMaxSize()){
         Column(Modifier.fillMaxSize().offset(y=40.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
             Image(
-                painter = painterResource(R.drawable.`finish_screen_logo`),
+                painter = painterResource(R.drawable.finish_screen_logo),
                 contentDescription = "Thank You Logo",
                 modifier = Modifier.size(280.dp).absoluteOffset(y = offsetAnimation),
                 contentScale = ContentScale.Crop,

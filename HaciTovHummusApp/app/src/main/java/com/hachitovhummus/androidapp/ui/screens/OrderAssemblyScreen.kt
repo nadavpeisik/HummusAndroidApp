@@ -43,16 +43,16 @@ import com.hachitovhummus.androidapp.ui.theme.*
 @Composable
 fun OrderAssemblyScreen(orderViewModel: OrderViewModel, onClickFinishedOrder: () -> Unit){
     val order: Order by orderViewModel.order.observeAsState(Order())
-    val price: Int by orderViewModel.price.observeAsState(0)
-    val businessDish: Boolean by orderViewModel.businessDish.observeAsState(false)
-    val smallDish: Boolean by orderViewModel.smallDish.observeAsState(false)
-    val basics: Set<Basic> by orderViewModel.basics.observeAsState(setOf())
+    val price = orderViewModel.order.value!!.price
+    val businessDish = orderViewModel.order.value!!.isBusinessMeal
+    val smallDish = orderViewModel.order.value!!.dish.isSmallDish
+    val special = orderViewModel.order.value!!.dish.special
+    val basics = orderViewModel.order.value!!.dish.basics
     val enabledBasics: Set<Basic> by orderViewModel.enabledBasics.observeAsState(setOf())
-    val special: Special by orderViewModel.special.observeAsState(Special.NONE)
-    val spices: Set<Spice> by orderViewModel.spices.observeAsState(setOf())
-    val drink: Drink by orderViewModel.drink.observeAsState(Drink.NONE)
-    val isASaladDish: Boolean by orderViewModel.isSaladDish.observeAsState(false)
-    val smallSalad: Boolean by orderViewModel.smallSalad.observeAsState(false)
+    val spices = orderViewModel.order.value!!.dish.spices
+    val smallSalad = orderViewModel.order.value!!.hasSmallSalad
+    val drink = orderViewModel.order.value!!.drink
+    val isASaladDish = orderViewModel.order.value!!.dish.isSaladDish
     var startToastAnimation by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize().statusBarsPadding()
@@ -63,7 +63,7 @@ fun OrderAssemblyScreen(orderViewModel: OrderViewModel, onClickFinishedOrder: ()
             .background(Brush.verticalGradient(listOf(Cream1, Cream2)))) {
             Spacer(modifier = Modifier.size(292.dp))
             Spacer(modifier = Modifier.size(24.dp))
-            Row(){
+            Row{
                 Row(modifier = Modifier.padding(start = 16.dp).toggleable(value = businessDish, onValueChange = {orderViewModel.onBusinessDishSelect()}), horizontalArrangement = Arrangement.Start, verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = businessDish, onCheckedChange = {orderViewModel.onBusinessDishSelect()}, modifier = Modifier.scale(0.85f).offset(y=1.dp), colors = CheckboxDefaults.colors(Green2))
                     Text(text = stringResource(R.string.business_meal), style = hummusAppTypography.subtitle1, textAlign = TextAlign.Start, modifier = Modifier.padding(start = 1.dp))
@@ -78,14 +78,16 @@ fun OrderAssemblyScreen(orderViewModel: OrderViewModel, onClickFinishedOrder: ()
             Text(text = stringResource(R.string.specials), style = hummusAppTypography.h2, textAlign = TextAlign.Start, modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp))
-            if(smallDish){
-                SpecialsRow(currentSpecial = special, onSpecialChange = {orderViewModel.onSpecialChange(it)}, smallDishSpecialsList)
-            }
-            else if(businessDish){
-                SpecialsRow(currentSpecial = special, onSpecialChange = {orderViewModel.onSpecialChange(it)}, businessDishSpecialsList)
-            }
-            else{
-                SpecialsRow(currentSpecial = special, onSpecialChange = {orderViewModel.onSpecialChange(it)}, specialsList)
+            when {
+                smallDish -> {
+                    SpecialsRow(currentSpecial = special, onSpecialChange = {orderViewModel.onSpecialChange(it)}, smallDishSpecialsList)
+                }
+                businessDish -> {
+                    SpecialsRow(currentSpecial = special, onSpecialChange = {orderViewModel.onSpecialChange(it)}, businessDishSpecialsList)
+                }
+                else -> {
+                    SpecialsRow(currentSpecial = special, onSpecialChange = {orderViewModel.onSpecialChange(it)}, specialsList)
+                }
             }
 
             Column(
@@ -101,18 +103,18 @@ fun OrderAssemblyScreen(orderViewModel: OrderViewModel, onClickFinishedOrder: ()
                         }
                     }, style = hummusAppTypography.h2, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth())
 
-                BasicsRow(basics = basics, onBasicSelect = {orderViewModel.onBasicSelect(it)}, enabledBasics = enabledBasics)
+                BasicsRow(basics = basics.toSet(), onBasicSelect = {orderViewModel.onBasicSelect(it)}, enabledBasics = enabledBasics)
                 Spacer(modifier = Modifier.size(16.dp))
-                SpicesRow(spices = spices, onSpiceSelect = {orderViewModel.onSpiceSelect(it)}, isASaladDish)
+                SpicesRow(spices = spices.toSet(), onSpiceSelect = {orderViewModel.onSpiceSelect(it)}, isASaladDish)
                 SmallSalad(isSaladDish = isASaladDish, currentState = smallSalad, onSmallSaladSelect = {orderViewModel.onSmallSaladSelect()})
                 Text(text = stringResource(R.string.drink), style = hummusAppTypography.h2, textAlign = TextAlign.Start, modifier = Modifier.fillMaxWidth())
             }
-            DrinksRow(drinksList, drink, {orderViewModel.onDrinkChange(it)})
+            DrinksRow(drinksList, drink) { orderViewModel.onDrinkChange(it) }
             Spacer(modifier = Modifier.size(16.dp))
             Text(text = stringResource(R.string.user_comment), style = hummusAppTypography.h2, textAlign = TextAlign.Start, modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp))
-            userComment(orderViewModel)
+            UserComment(orderViewModel)
 
             if(startToastAnimation){
                 Spacer(modifier = Modifier.size(8.dp))
@@ -130,8 +132,8 @@ fun OrderAssemblyScreen(orderViewModel: OrderViewModel, onClickFinishedOrder: ()
                 .height(56.dp)
             ) {
 
-                Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable(
-                    onClick = { if(orderViewModel.deservesDrink()){
+                Column(verticalArrangement = Arrangement.Center, horizontalAlignment = CenterHorizontally, modifier = Modifier.clickable(
+                    onClick = { if(orderViewModel.order.value!!.deservesDrink(orderViewModel.happyHour)){
                         startToastAnimation = true
                     } else{
                         onClickFinishedOrder()}
@@ -228,21 +230,21 @@ private fun DrinksRow(
 }
 
 @Composable
-fun userComment(vm:OrderViewModel){
+fun UserComment(vm:OrderViewModel){
     val focusManager = LocalFocusManager.current
     var userText by remember { mutableStateOf("") }
-    OutlinedTextField(value = userText, onValueChange = {if(it.length > 26){} else{userText = it; vm.updateComment(userText)}}, label = { Text(text = "מקום לבקשות מיוחדות", style = hummusAppTypography.subtitle1, textAlign = TextAlign.Start) }, singleLine = true, textStyle = hummusAppTypography.subtitle1,
+    OutlinedTextField(value = userText, onValueChange = {if(it.length <= 26){userText = it; vm.updateComment(userText)}}, label = { Text(text = "מקום לבקשות מיוחדות", style = hummusAppTypography.subtitle1, textAlign = TextAlign.Start) }, singleLine = true, textStyle = hummusAppTypography.subtitle1,
         keyboardActions = KeyboardActions(onDone = {focusManager.clearFocus(); vm.updateComment(userText)}),modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 160.dp))
 }
 
 @Composable
-fun CustomToast(mod: Modifier, toastText: String){
-    Surface(shape = RoundedCornerShape(12.dp), color = Color.Black.copy(alpha = 0.6f), modifier = mod
+fun CustomToast(modifier: Modifier, toastText: String){
+    Surface(shape = RoundedCornerShape(12.dp), color = Color.Black.copy(alpha = 0.6f), modifier = modifier
         .width(116.dp)
         .height(24.dp)) {
-        Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(verticalArrangement = Arrangement.Center, horizontalAlignment = CenterHorizontally) {
             Text(text = toastText, textAlign = TextAlign.Center, style = hummusAppTypography.subtitle1, color = Color.White)
         }
     }
@@ -252,9 +254,9 @@ fun CustomToast(mod: Modifier, toastText: String){
 @Preview
 @Composable
 fun OrderAssemblyScreenPreview() {
-    HachiTovHummusTheme() {
+    HachiTovHummusTheme {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl ){
-            OrderAssemblyScreen(OrderViewModel(),{})
+            OrderAssemblyScreen(OrderViewModel(true)) {}
         }
     }
 }

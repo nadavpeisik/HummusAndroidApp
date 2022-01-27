@@ -31,7 +31,7 @@ import com.hachitovhummus.androidapp.ui.theme.*
 import com.hachitovhummus.androidapp.ui.theme.Grey2
 
 @Composable
-fun BasicCard(basic: Basic, basics: Set<Basic>, onBasicClick: (Basic) -> Unit, enabledBasics: Set<Basic>,){
+fun BasicCard(basic: Basic, basics: Set<Basic>, onBasicClick: (Basic) -> Unit, enabledBasics: Set<Basic>){
     var checked = basics.contains(basic)
     val basicCardTransitionState = checkAnimation(checked)
 
@@ -61,7 +61,7 @@ fun BasicCard(basic: Basic, basics: Set<Basic>, onBasicClick: (Basic) -> Unit, e
                         Icon(imageVector = Icons.Filled.Done, contentDescription = null, tint = Green2.copy(alpha = basicCardTransitionState.selectedCheckAlpha), modifier = Modifier
                             .wrapContentSize()
                             .scale(basicCardTransitionState.checkScale)
-                            .align(Alignment.Center).offset(y=-8.dp))
+                            .align(Alignment.Center).offset(y= (-8).dp))
                     }
                 }
             }
@@ -91,7 +91,7 @@ val businessDishSpecialsList = listOf(Special.NONE, Special.HAMSHUKA, Special.MU
 
 @Composable
 fun SpecialCard(special: Special, currentSpecial: Special, onSpecialChange: (Special) -> Unit){
-    var checked = special == currentSpecial
+    val checked = special == currentSpecial
     val specialCardTransitionState = checkAnimation(checked)
     Surface(shape = RoundedCornerShape(16.dp), elevation = 4.dp, color = Color.White, contentColor = Color.Black, modifier = Modifier
         .padding(start = 14.dp)
@@ -105,20 +105,20 @@ fun SpecialCard(special: Special, currentSpecial: Special, onSpecialChange: (Spe
                 onSpecialChange(special)
             }
         )){
-            Box(){
+            Box{
                 Column(Modifier.fillMaxSize()) {
-                    Box(modifier = androidx.compose.ui.Modifier
+                    Box(modifier = Modifier
                         .background(Brush.horizontalGradient(special.gradientColors))
                         .fillMaxWidth()
                         .height(56.dp)) {}
                     Column(verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize()){
-                        Text(text = special.type, style = MaterialTheme.typography.h4, modifier = Modifier.offset(y = -4.dp)) //TODO: same as in basic card
+                        Text(text = special.type, style = MaterialTheme.typography.h4, modifier = Modifier.offset(y = (-4).dp))
                     }
                 }
                 SpecialImage(imageID = special.imageID, modifier = Modifier
                     .size(76.dp)
                     .align(Alignment.Center)
-                    .offset(y = -6.dp)
+                    .offset(y = (-6).dp)
                 )
             }
             if(checked){
@@ -126,7 +126,7 @@ fun SpecialCard(special: Special, currentSpecial: Special, onSpecialChange: (Spe
                     Icon(imageVector = Icons.Filled.Done, contentDescription = null, tint = Green2.copy(alpha = specialCardTransitionState.selectedCheckAlpha), modifier = Modifier
                         .wrapContentSize()
                         .scale(specialCardTransitionState.checkScale)
-                        .align(Alignment.Center).offset(x=-1.dp, y=-4.dp))
+                        .align(Alignment.Center).offset(x= (-1).dp, y= (-4).dp))
                 }
             }
         }
@@ -143,7 +143,7 @@ fun SpecialImage(imageID: Int, modifier: Modifier, elevation: Dp = 0.dp) //align
 
 @Composable
 fun SpiceCard(spice: Spice, spices: Set<Spice>, onSpiceClick: (Spice) -> Unit) {
-    var checked = spices.contains(spice)
+    val checked = spices.contains(spice)
     val spiceCardTransitionState = checkAnimation(checked)
 
     Surface(elevation = 4.dp, shape = CircleShape, color = spice.backgroundColor, modifier = Modifier
@@ -165,21 +165,35 @@ fun SpiceCard(spice: Spice, spices: Set<Spice>, onSpiceClick: (Spice) -> Unit) {
 
 @Composable
 fun SmallSaladCard(currentState: Boolean, onSmallSaladClick: () -> Unit) {
-    var checked = currentState
-    val smallSaladCardTransitionState = checkAnimation(checked)
+    val smallSaladCardTransitionState = checkAnimation(currentState)
     Surface(elevation = 4.dp, shape = RoundedCornerShape(16.dp), color = Green2, modifier = Modifier
         .size(80.dp)) {
-        Box(modifier = Modifier.toggleable(value = checked, onValueChange = {onSmallSaladClick()})){
+        Box(modifier = Modifier.toggleable(
+            value = currentState,
+            onValueChange = { onSmallSaladClick() })){
 
-            Image(painter = painterResource(R.drawable.small_salad), contentDescription = null, modifier = Modifier
-                .padding(3.dp)
-                .fillMaxSize(), contentScale = ContentScale.Crop)
+            Image(
+                painter = painterResource(R.drawable.small_salad),
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(3.dp)
+                    .fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
 
-            if(checked){
-                Surface(color = Grey1.copy(alpha = smallSaladCardTransitionState.selectedBGAlpha), modifier = Modifier.matchParentSize()) {
-                    Icon(imageVector = Icons.Filled.Done, contentDescription = null, tint = Green2.copy(alpha = smallSaladCardTransitionState.selectedCheckAlpha), modifier = Modifier
-                        .wrapContentSize()
-                        .scale(smallSaladCardTransitionState.checkScale))
+            if (currentState) {
+                Surface(
+                    color = Grey1.copy(alpha = smallSaladCardTransitionState.selectedBGAlpha),
+                    modifier = Modifier.matchParentSize()
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Done,
+                        contentDescription = null,
+                        tint = Green2.copy(alpha = smallSaladCardTransitionState.selectedCheckAlpha),
+                        modifier = Modifier
+                            .wrapContentSize()
+                            .scale(smallSaladCardTransitionState.checkScale)
+                    )
                 }
             }
         }
@@ -190,7 +204,7 @@ val drinksList = listOf(Drink.WATER, Drink.COKE, Drink.COKE_ZERO, Drink.FANTA, D
 
 @Composable
 fun DrinkCard(drink: Drink, currentDrink: Drink, onDrinkClick: (Drink) -> Unit) {
-    var checked = drink == currentDrink
+    val checked = drink == currentDrink
     val drinkCardTransitionState = checkAnimation(checked)
     Surface(elevation = 4.dp, shape = RoundedCornerShape(8.dp), color = drink.backgroundColor, modifier = Modifier
         .padding(start = 16.dp)
@@ -214,7 +228,7 @@ fun DrinkCard(drink: Drink, currentDrink: Drink, onDrinkClick: (Drink) -> Unit) 
 @Composable
 fun BasicCardPreview()
 {
-    HachiTovHummusTheme() {
+    HachiTovHummusTheme {
         BasicCard(Basic.TAHINI, setOf(Basic.TAHINI), {}, setOf(Basic.TAHINI))
     }
 }
@@ -224,7 +238,7 @@ fun BasicCardPreview()
 fun SpecialCardPreview()
 {
     HachiTovHummusTheme {
-        SpecialCard(Special.HAMSHUKA, Special.HAMSHUKA, {})
+        SpecialCard(Special.HAMSHUKA, Special.HAMSHUKA) {}
     }
 }
 
@@ -233,7 +247,7 @@ fun SpecialCardPreview()
 fun SpiceCardPreview()
 {
     HachiTovHummusTheme {
-        SpiceCard(Spice.PARSLEY, setOf(), {})
+        SpiceCard(Spice.PARSLEY, setOf()) {}
     }
 }
 
@@ -242,7 +256,7 @@ fun SpiceCardPreview()
 fun SmallSaladCardPreview()
 {
     HachiTovHummusTheme {
-        SmallSaladCard(true, {})
+        SmallSaladCard(true) {}
     }
 }
 
@@ -251,7 +265,7 @@ fun SmallSaladCardPreview()
 fun DrinkCardPreview()
 {
     HachiTovHummusTheme {
-        DrinkCard(Drink.COKE, Drink.COKE, {})
+        DrinkCard(Drink.COKE, Drink.COKE) {}
     }
 }
 
@@ -274,13 +288,15 @@ private enum class SelectionState { Unselected, Selected }
 @Composable
 private fun checkAnimation(topicSelected: Boolean): CheckAnimation {
     val transition = updateTransition(
-        targetState = if (topicSelected) SelectionState.Selected else SelectionState.Unselected
+        targetState = if (topicSelected) SelectionState.Selected else SelectionState.Unselected,
+        label = "transition"
     )
     val selectedBGAlpha = transition.animateFloat { state ->
         when (state) {
             SelectionState.Unselected -> 0f
             SelectionState.Selected -> 0.35f
         }
+
     }
     val selectedCheckAlpha = transition.animateFloat { state ->
         when (state) {

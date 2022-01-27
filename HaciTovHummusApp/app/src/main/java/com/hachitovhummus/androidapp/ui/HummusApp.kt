@@ -17,44 +17,56 @@ import com.hachitovhummus.androidapp.ui.theme.HachiTovHummusTheme
 @Composable
 fun HummusApp(activity: Activity) {
     ProvideWindowInsets { // draws app above bottom system bar
-        HachiTovHummusTheme(){
-            var orderListViewModel = OrderListViewModel()
+        HachiTovHummusTheme{
+            lateinit var orderListViewModel: OrderListViewModel
             val navController = rememberNavController()
+
+            fun goToNextScreen(takeOut: Boolean){
+                orderListViewModel = OrderListViewModel(takeOut)
+                navController.navigate("orderAssemblyScreen")
+            }
+
             NavHost(navController = navController, startDestination = "welcomeScreen"){
                 composable("welcomeScreen"){
                     WelcomeScreen(
-                        onClickNewOrder = {navController.navigate("orderAssemblyScreen")},
-                        onClickTakeOut = {orderListViewModel.createOrderCollection(true); navController.navigate("orderAssemblyScreen")},
-                        orderListViewModel
+                        onClickNewOrder = {goToNextScreen(false)},
+                        onClickTakeOut = {goToNextScreen(true)},
                     )
                 }
 
                 composable(route = "orderAssemblyScreen"){
                     OrderAssemblyScreen(
-                        onClickFinishedOrder = {orderListViewModel.addOrder(); navController.navigate("ordersScreen")},
-                        orderViewModel = orderListViewModel.currentOrder.value!!
-                    )
-                }
+                        onClickFinishedOrder = {
+                            orderListViewModel.addOrder()
+                            navController.navigate("ordersScreen")},
+                        orderViewModel = orderListViewModel.currentOrderVM
+                    )}
 
                 composable(route = "ordersScreen"){
+
+                    fun goToPrevScreen(editMode: Boolean) {
+                        orderListViewModel.setInEditMode(editMode)
+                        if (editMode){
+                            orderListViewModel.editOrder()
+                        }
+                        navController.navigate("orderAssemblyScreen")
+                    }
+
                     OrdersScreen(
-                        onClickNewOrder = {orderListViewModel.setInEditMode(false); navController.navigate("orderAssemblyScreen")},
-                        onClickEditOrder = {orderListViewModel.setInEditMode(true); orderListViewModel.editOrder(); navController.navigate("orderAssemblyScreen")},
+                        onClickNewOrder = {goToPrevScreen(false)},
+                        onClickEditOrder = {goToPrevScreen(true)},
                         orderListViewModel = orderListViewModel,
-                        restartApp = { orderListViewModel = OrderListViewModel(); navController.navigate("welcomeScreen"); restartApp(activity)},
-                    )
-                }
+                        restartApp = { navController.navigate("welcomeScreen"); triggerRestart(activity)},
+                    )}
             }
         }
     }
 }
 
-fun restartApp(context: Activity) {
+fun triggerRestart(context: Activity) {
     val intent = Intent(context, context::class.java)
     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(intent)
-    if (context is Activity) {
-        (context as Activity).finish()
-    }
+    context.finish()
     Runtime.getRuntime().exit(0)
 }

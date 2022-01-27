@@ -2,10 +2,7 @@ package com.hachitovhummus.androidapp.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.animateDp
-import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.shrinkHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -33,7 +30,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hachitovhummus.androidapp.model.Drink
 import com.hachitovhummus.androidapp.model.Order
-import com.hachitovhummus.androidapp.ui.HummusApp
 import com.hachitovhummus.androidapp.ui.screens.OrderListViewModel
 import com.hachitovhummus.androidapp.ui.theme.*
 import kotlin.math.roundToInt
@@ -41,7 +37,7 @@ import kotlin.math.roundToInt
 @Composable
 fun OrderCard(order: Order, price: Int, withDrink: Boolean, withSmallSalad: Boolean, drink: Drink){ //withoutSpices: Boolean,
     var orderCardHeight = 292
-    var smallSaladText: String = ""
+    var smallSaladText = ""
     if(withDrink || withSmallSalad){
         orderCardHeight += 16
         if(withSmallSalad){
@@ -72,7 +68,7 @@ fun OrderCard(order: Order, price: Int, withDrink: Boolean, withSmallSalad: Bool
                             withStyle(style = SpanStyle(fontSize = 16.sp)){
                                 append('₪')
                             }
-                        }, style = hummusAppTypography.h2, textAlign = TextAlign.Center, modifier = Modifier.offset(x = -4.dp, y = 4.dp))
+                        }, style = hummusAppTypography.h2, textAlign = TextAlign.Center, modifier = Modifier.offset(x = (-4).dp, y = 4.dp))
                 }
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
@@ -118,12 +114,12 @@ fun OrderCardContainer(order: Order, onClickEditOrder: () -> Unit, index: Int, v
 @ExperimentalAnimationApi
 @ExperimentalMaterialApi
 @Composable //another version of container, using slider
-fun OrderCardContainerSliderVersion(order: Order, onClickEditOrder: () -> Unit, onClickRemoveOrder: () -> Unit, index: Int, vm: OrderListViewModel, price: Int, withDrink: Boolean, withSmallSalad: Boolean, drink: Drink){
-    var swipeableState = rememberSwipeableState(initialValue = 0)
+fun OrderCardContainerSliderVersion(order: Order, onClickEditOrder: () -> Unit, index: Int, vm: OrderListViewModel, price: Int, withDrink: Boolean, withSmallSalad: Boolean, drink: Drink){
+    val swipeableState = rememberSwipeableState(initialValue = 0)
     val sizePx = with(LocalDensity.current) { 48.dp.toPx() }
     val anchors = mapOf(0f to 0,sizePx  to 1)
 
-    var removeState by remember { mutableStateOf(true) }
+    val removeState by remember { mutableStateOf(true) }
     AnimatedVisibility(visible = removeState, exit = shrinkHorizontally()) {
         Box(modifier = Modifier
             .fillMaxWidth()
@@ -165,14 +161,14 @@ fun OrderCardContainerSliderVersion(order: Order, onClickEditOrder: () -> Unit, 
     Spacer(modifier = Modifier.size(8.dp))
 }
 
-@Preview()
+@Preview
 @Composable
 fun OrderCardPreview()
 {
-    HachiTovHummusTheme() {
+    HachiTovHummusTheme {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl ){
             Surface {
-                OrderCard(Order(), 25, true, true, Drink.NONE)
+                OrderCard(Order(), 25, withDrink = true, withSmallSalad = true, drink = Drink.NONE)
             }
         }
     }
@@ -180,13 +176,17 @@ fun OrderCardPreview()
 
 @ExperimentalAnimationApi
 @ExperimentalMaterialApi
-@Preview()
+@Preview
 @Composable
 fun OrderCardContainerPreview()
 {
-    HachiTovHummusTheme() {
+    HachiTovHummusTheme {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl ){
-            OrderCardContainer(Order(), {},1,OrderListViewModel(),25,false,false,Drink.NONE)
+            OrderCardContainer(Order(), {},1,OrderListViewModel(true),25,
+                withDrink = false,
+                withSmallSalad = false,
+                drink = Drink.NONE
+            )
         }
     }
 }
